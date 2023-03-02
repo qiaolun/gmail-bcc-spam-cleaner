@@ -1,3 +1,49 @@
+
+function trimGmail(mail) {
+
+  let list = mail.split(',')
+  for (let i in list) {
+    let m = list[i];
+    let parts = m.split('@')
+
+    m = parts[0].replaceAll(/\+[^@]*/g, '').replaceAll('.', '') + '@' + parts[1];
+    list[i] = m;
+  }
+  return list.join(', ')
+}
+
+function isThreadSpam(myEmail, thread) {
+  const messages = thread.getMessages();
+  const message = messages[0];
+  const to = message.getTo();
+  const cc = message.getCc();
+  const from = message.getFrom();
+
+  const listId = message.getHeader('List-ID');
+  if (listId.indexOf(': .7289367.') !== -1) {
+    // is spam list
+    return true;
+  }
+
+  if (from.replace('>', '').endsWith('.facebook.com')) {
+    return false;
+  }
+
+  // check bcc
+  if (trimGmail(to).includes(myEmail)) {
+    return false;
+  }
+  if (trimGmail(cc).includes(myEmail)) {
+    return false;
+  }
+
+  Logger.log('is bcc');
+
+  // is bcc spam
+  return true;
+}
+
+
 function deleteBccSpam() {
 
   const myEmail = Session.getEffectiveUser().getEmail();
@@ -6,21 +52,16 @@ function deleteBccSpam() {
   const threads = GmailApp.getSpamThreads(0, 100);
 
   for (const thread of threads) {
-    const messages = thread.getMessages();
-    const message = messages[0];
-    const to = message.getTo();
-    const cc = message.getCc();
 
-    Logger.log('to: ' + to + ', cc: ' + cc);
-
-    if (to.includes(myEmail)) {
-      continue;
-    }
-    if (cc.includes(myEmail)) {
+    if (!isThreadSpam(myEmail, thread)) {
       continue;
     }
 
-    Logger.log('delete bcc: ' + message.getSubject());
+    if (thread.isImportant()) {
+      thread.markUnimportant();
+    }
+
+    Logger.log('delete bcc: ' + thread.getFirstMessageSubject());
     thread.moveToTrash();
   }
 }
@@ -33,30 +74,15 @@ function deleteBccInbox() {
   const threads = GmailApp.getInboxThreads(0, 10);
 
   for (const thread of threads) {
-    const messages = thread.getMessages();
-    const message = messages[0];
-    const to = message.getTo();
-    const cc = message.getCc();
-    const from = message.getFrom();
-
-    Logger.log('to: ' + to + ', cc: ' + cc);
-
-    if (message.isInPriorityInbox()) {
+    if (!isThreadSpam(myEmail, thread)) {
       continue;
     }
 
-    if (to.includes(myEmail)) {
-      continue;
-    }
-    if (cc.includes(myEmail)) {
-      continue;
+    if (thread.isImportant()) {
+      thread.markUnimportant();
     }
 
-    if (from.replace('>', '').endsWith('.facebook.com')) {
-      continue;
-    }
-
-    Logger.log('delete bcc: ' + message.getSubject());
-    thread.moveToTrash();
+    Logger.log('delete bcc: ' + thread.getFirstMessageSubject());
+    thread.moveToSpam();
   }
 }
