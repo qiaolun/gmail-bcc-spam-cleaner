@@ -20,7 +20,7 @@ function isThreadSpam(myEmail, thread) {
   const from = message.getFrom();
 
   const listId = message.getHeader('List-ID');
-  if (listId.indexOf(': .7289367.') !== -1) {
+  if (listId.indexOf('.7289367.xt.local') !== -1) {
     // is spam list
     return true;
   }
