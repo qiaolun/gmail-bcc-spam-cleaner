@@ -44,7 +44,7 @@ function isThreadSpam(myEmail, thread) {
 }
 
 
-function deleteBccSpam() {
+function deleteBccFromSpam() {
 
   const myEmail = Session.getEffectiveUser().getEmail();
   Logger.log('my email: ' + myEmail);
@@ -61,12 +61,15 @@ function deleteBccSpam() {
       thread.markUnimportant();
     }
 
-    Logger.log('delete bcc: ' + thread.getFirstMessageSubject());
-    thread.moveToTrash();
+    if (thread.isUnread()) {
+      thread.markRead();
+    }
+    // Logger.log('delete bcc: ' + thread.getFirstMessageSubject());
+    // thread.moveToTrash();
   }
 }
 
-function deleteBccInbox() {
+function deleteBccFromInbox() {
 
   const myEmail = Session.getEffectiveUser().getEmail();
   Logger.log('my email: ' + myEmail);
@@ -80,6 +83,10 @@ function deleteBccInbox() {
 
     if (thread.isImportant()) {
       thread.markUnimportant();
+    }
+
+    if (thread.isUnread()) {
+      thread.markRead();
     }
 
     Logger.log('delete bcc: ' + thread.getFirstMessageSubject());
